@@ -1,0 +1,497 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Trasy turystyczne — REST API",
+    "version": "1.0.0",
+    "description": "API serwera tras turystycznych (mikroserwis instalowany per kontener).\n\n**Wszystkie endpointy(oprócz frontendowych) są autoryzowane** parą `client_id` + `client_secret`:\n- **Client** — dowolny prawidłowy klient (CRUD własnych obiektów, odczyt do mapy, konfiguracja).\n- **Admin** — klient oznaczony w configu serwera flagą `admin: true` (centralne zarządzanie kategoriami). Brak flagi → serwer zwraca 403 niezależnie od UI po stronie paczki.\n\n**Uwierzytelnianie:** nagłówki `X-Client-Id` + `X-Client-Secret` (alternatywnie pola `client_id`/`client_secret` w body). Klienci i flaga admina są w `config/tourist_routes.php` (id i secret z `.env`).\n\n**Wersjonowanie:** każde żądanie musi zawierać nagłówek `X-Api-Version` z wersją klienta. Serwer porównuje ją ze swoją wersją (ta sama wersja MAJOR oraz >= min_client_version) i przy niezgodności zwraca **409**. Wersja serwera jest w nagłówku `X-Api-Version` każdej odpowiedzi.\n\n**Obiekt = punkt lub trasa** (`POST /client/objects`). Rozróżnia je `is_tourist_route` i format `coordinates`:\n- **punkt**: `is_tourist_route = 0`, jedna para `\"lat||lng\"`,\n- **trasa**: `is_tourist_route = 1`, lista `\"lat||lng;lat||lng;...\"` + `distance`, `route_time`, `route_type`, `route_color`."
+  },
+  "servers": [
+    { "url": "http://trasy-server-loc.pl/api/v1/tourist-routes", "description": "Lokalny serwer deweloperski" },
+    { "url": "{baseUrl}/api/v1/tourist-routes", "description": "Dowolny serwer", "variables": { "baseUrl": { "default": "https://example.com" } } }
+  ],
+  "tags": [
+    { "name": "Config", "description": "Konfiguracja klienta (kim jestem, czy admin, wersja API)" },
+    { "name": "Client", "description": "CRUD obiektów klienta + kategorie dostępne klientowi" },
+    { "name": "Front", "description": "Odczyt danych dla wtyczki frontowej (mapa)" },
+    { "name": "Admin", "description": "Centralne zarządzanie kategoriami (klient z admin=true)" }
+  ],
+  "security": [
+    { "ClientId": [], "ClientSecret": [] }
+  ],
+  "paths": {
+    "/config": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "get": {
+        "tags": ["Config"],
+        "summary": "Konfiguracja uwierzytelnionego klienta",
+        "description": "Zwraca informacje o kliencie — m.in. czy ma uprawnienia admina oraz wersję API serwera. Wtyczka client na tej podstawie decyduje, czy włączyć UI administracyjny.",
+        "responses": {
+          "200": { "description": "Konfiguracja klienta", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Config" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    },
+    "/client/objects": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "get": {
+        "tags": ["Client"],
+        "summary": "Lista obiektów klienta (paginacja)",
+        "parameters": [
+          { "name": "current_page", "in": "query", "required": true, "schema": { "type": "integer", "example": 1 } },
+          { "name": "per_page", "in": "query", "required": true, "schema": { "type": "integer", "example": 20 } },
+          { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginowana lista obiektów klienta",
+            "content": { "application/json": { "schema": { "allOf": [ { "$ref": "#/components/schemas/Paginator" }, { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Point" } } } } ] } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      },
+      "post": {
+        "tags": ["Client"],
+        "summary": "Dodaj obiekt (punkt lub trasę)",
+        "description": "Tworzy punkt (jedna współrzędna) albo trasę (wiele współrzędnych + metadane). Właściciel (`client_id`) ustawiany jest z uwierzytelnienia. Można przypisać tylko kategorie dostępne dla klienta.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PointInput" },
+              "examples": {
+                "punkt": {
+                  "summary": "Pojedynczy punkt",
+                  "value": { "name": "Ratusz", "coordinates": "53.1325||23.1688", "lead": "Zabytkowy ratusz", "categories": [20], "for_disabled": 1, "btn_text": "Zobacz", "redirect_link": "https://example.pl" }
+                },
+                "trasa": {
+                  "summary": "Trasa turystyczna (wiele waypointów)",
+                  "value": { "name": "Szlak Orlich Gniazd", "coordinates": "50.46||19.62;50.48||19.66;50.51||19.70", "is_tourist_route": 1, "distance": "24.5", "route_time": "6:30", "route_type": "foot", "route_color": "#0a5ed7", "categories": [20] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/PointSaved" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/client/objects/{uuid}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/ApiVersionHeader" },
+        { "name": "uuid", "in": "path", "required": true, "description": "UUID obiektu", "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Client"],
+        "summary": "Szczegóły obiektu",
+        "responses": {
+          "200": { "description": "Obiekt", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Point" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      },
+      "post": {
+        "tags": ["Client"],
+        "summary": "Edytuj obiekt",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PointInput" } } } },
+        "responses": {
+          "200": { "$ref": "#/components/responses/PointSaved" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      },
+      "delete": {
+        "tags": ["Client"],
+        "summary": "Usuń obiekt",
+        "responses": {
+          "200": { "description": "Usunięto", "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean", "example": true } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    },
+    "/client/categories": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "get": {
+        "tags": ["Client"],
+        "summary": "Kategorie dostępne dla klienta",
+        "description": "Drzewo kategorii, do których klient ma dostęp (globalne lub przypisane). Używane przy formularzu dodawania obiektu.",
+        "parameters": [ { "name": "language_id", "in": "query", "required": false, "schema": { "type": "integer", "example": 1 } } ],
+        "responses": {
+          "200": { "description": "Drzewo kategorii", "content": { "application/json": { "schema": { "type": "object", "properties": { "categories": { "type": "array", "items": { "$ref": "#/components/schemas/CategoryTreeNode" } } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    },
+    "/front/objects": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "get": {
+        "tags": ["Front"],
+        "summary": "Lista obiektów do wyświetlenia na mapie",
+        "description": "Wszystkie aktualnie obowiązujące punkty/trasy. Endpoint dla wtyczki frontowej.",
+        "parameters": [
+          { "name": "name", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "categories[]", "in": "query", "required": false, "schema": { "type": "array", "items": { "type": "integer" } } },
+          { "name": "availabilities[]", "in": "query", "required": false, "schema": { "type": "array", "items": { "type": "string" } } },
+          { "name": "only_routes", "in": "query", "required": false, "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Obiekty", "content": { "application/json": { "schema": { "type": "object", "properties": { "points": { "type": "array", "items": { "$ref": "#/components/schemas/Point" } } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    },
+    "/front/objects/{uuid}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/ApiVersionHeader" },
+        { "name": "uuid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Front"],
+        "summary": "Pojedynczy obiekt (mapa)",
+        "responses": {
+          "200": { "description": "Obiekt", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Point" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    },
+    "/front/categories": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "get": {
+        "tags": ["Front"],
+        "summary": "Drzewo aktywnych kategorii (mapa)",
+        "parameters": [ { "name": "language_id", "in": "query", "required": false, "schema": { "type": "integer", "example": 1 } } ],
+        "responses": {
+          "200": { "description": "Drzewo kategorii", "content": { "application/json": { "schema": { "type": "object", "properties": { "categories": { "type": "array", "items": { "$ref": "#/components/schemas/CategoryTreeNode" } } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    },
+    "/admin/categories": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Lista kategorii (paginacja)",
+        "parameters": [
+          { "name": "current_page", "in": "query", "required": true, "schema": { "type": "integer", "example": 1 } },
+          { "name": "per_page", "in": "query", "required": true, "schema": { "type": "integer", "example": 20 } },
+          { "name": "parent_id", "in": "query", "required": false, "description": "Filtr po kategorii nadrzędnej (podkategorie)", "schema": { "type": "integer" } },
+          { "name": "only_main", "in": "query", "required": false, "description": "Tylko kategorie główne", "schema": { "type": "boolean" } },
+          { "name": "active", "in": "query", "required": false, "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginowana lista kategorii", "content": { "application/json": { "schema": { "allOf": [ { "$ref": "#/components/schemas/Paginator" }, { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } } } } ] } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Dodaj kategorię",
+        "description": "Kategoria główna lub podrzędna (gdy `parent_id`). Nazwy wielojęzyczne — `name` to mapa `language_id` → nazwa.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CategoryInput" },
+              "examples": {
+                "glowna": { "summary": "Kategoria główna", "value": { "name": { "1": "Zabytki" }, "color": "#cc0000", "active": 1 } },
+                "podrzedna": { "summary": "Podkategoria", "value": { "name": { "1": "Zamki" }, "parent_id": 20, "active": 1 } },
+                "wielojezyczna": { "summary": "Wiele języków + dostęp dla klientów", "value": { "name": { "1": "Zabytki", "2": "Monuments" }, "color": "#cc0000", "active": 1, "is_route": 0, "client_ids": ["multisite_client"] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Utworzona kategoria", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/admin/categories/sort": {
+      "parameters": [ { "$ref": "#/components/parameters/ApiVersionHeader" } ],
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Ustaw kolejność kategorii",
+        "description": "Ustawia `sort` zgodnie z kolejnością UUID w tablicy `order`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["order"], "properties": { "order": { "type": "array", "items": { "type": "string", "format": "uuid" } } } }, "example": { "order": ["b87533c5-a976-4e9d-9d53-a761661b1dc6", "67c05033-5a95-4a83-a6dc-926b416fc44d"] } } }
+        },
+        "responses": {
+          "200": { "description": "Zapisano kolejność" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/admin/categories/{uuid}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/ApiVersionHeader" },
+        { "name": "uuid", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+      ],
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Szczegóły kategorii",
+        "description": "Kategoria wraz z `current_names` i podkategoriami (`children`).",
+        "responses": {
+          "200": { "description": "Kategoria", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Edytuj kategorię",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryInput" } } } },
+        "responses": {
+          "200": { "description": "Zmieniona kategoria", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Usuń kategorię",
+        "description": "Usuwa kategorię wraz z podkategoriami i nazwami (soft delete).",
+        "responses": {
+          "200": { "description": "Usunięto" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/VersionIncompatible" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ClientId": { "type": "apiKey", "in": "header", "name": "X-Client-Id", "description": "client_id z config/tourist_routes.php (z env). Alternatywnie pole client_id w body." },
+      "ClientSecret": { "type": "apiKey", "in": "header", "name": "X-Client-Secret", "description": "client_secret klienta. Admin API wymaga klienta z admin=true." }
+    },
+    "parameters": {
+      "ApiVersionHeader": {
+        "name": "X-Api-Version",
+        "in": "header",
+        "required": true,
+        "description": "Wersja API klienta (semver MAJOR.MINOR[.PATCH]). Musi mieć tę samą wersję MAJOR co serwer i być >= min_client_version, inaczej 409.",
+        "schema": { "type": "string", "example": "1.0.0" }
+      }
+    },
+    "schemas": {
+      "Config": {
+        "type": "object",
+        "properties": {
+          "client_id": { "type": "string", "example": "multisite_admin" },
+          "name": { "type": "string", "example": "Multisite (admin)" },
+          "is_admin": { "type": "boolean", "example": true },
+          "api_version": { "type": "string", "example": "1.0.0" },
+          "abilities": {
+            "type": "object",
+            "properties": {
+              "manage_categories": { "type": "boolean" },
+              "manage_objects": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "CategoryTreeNode": {
+        "type": "object",
+        "properties": {
+          "uuid": { "type": "string", "format": "uuid" },
+          "id": { "type": "integer", "example": 20 },
+          "name": { "type": "string", "example": "Zabytki" },
+          "icon": { "type": "string", "nullable": true },
+          "color": { "type": "string", "nullable": true, "example": "#cc0000" },
+          "is_route": { "type": "integer", "enum": [0, 1] },
+          "children": { "type": "array", "items": { "$ref": "#/components/schemas/CategoryTreeNode" } }
+        }
+      },
+      "CategoryName": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "uuid": { "type": "string", "format": "uuid" },
+          "route_category_id": { "type": "integer" },
+          "language_id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Zabytki" },
+          "slug": { "type": "string", "example": "zabytki" },
+          "is_current": { "type": "integer", "enum": [0, 1] }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 20 },
+          "uuid": { "type": "string", "format": "uuid" },
+          "parent_id": { "type": "integer", "nullable": true },
+          "icon": { "type": "string", "nullable": true },
+          "color": { "type": "string", "nullable": true, "example": "#cc0000" },
+          "sort": { "type": "integer", "nullable": true },
+          "active": { "type": "integer", "enum": [0, 1] },
+          "is_route": { "type": "integer", "nullable": true, "enum": [0, 1] },
+          "show_for_module": { "type": "string", "nullable": true },
+          "client_ids": { "type": "string", "nullable": true, "description": "Klienci z dostępem w formacie |a|b| (null = globalna)", "example": "|multisite_client|" },
+          "current_names": { "type": "array", "items": { "$ref": "#/components/schemas/CategoryName" } },
+          "children": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } },
+          "created_at": { "type": "string", "format": "date-time", "nullable": true },
+          "updated_at": { "type": "string", "format": "date-time", "nullable": true },
+          "deleted_at": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "CategoryInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "object", "description": "Wielojęzyczne nazwy: mapa language_id → nazwa.", "additionalProperties": { "type": "string" }, "example": { "1": "Zabytki", "2": "Monuments" } },
+          "parent_id": { "type": "integer", "nullable": true },
+          "icon": { "type": "string", "nullable": true },
+          "color": { "type": "string", "nullable": true, "example": "#cc0000" },
+          "sort": { "type": "integer", "nullable": true },
+          "active": { "type": "integer", "enum": [0, 1], "example": 1 },
+          "is_route": { "type": "integer", "enum": [0, 1], "example": 0 },
+          "show_for_module": { "type": "string", "nullable": true },
+          "client_ids": { "description": "Tablica client_id lub string |a|b|. Puste = globalna.", "oneOf": [ { "type": "array", "items": { "type": "string" } }, { "type": "string" } ], "example": ["multisite_client"] }
+        }
+      },
+      "Point": {
+        "type": "object",
+        "description": "Obiekt: punkt lub trasa (trasa gdy is_tourist_route=1).",
+        "properties": {
+          "uuid": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "example": "Ratusz" },
+          "lead": { "type": "string" },
+          "description": { "type": "string" },
+          "coordinates": { "type": "string", "description": "Punkt: \"lat||lng\". Trasa: \"lat||lng;lat||lng;...\".", "example": "53.1325||23.1688" },
+          "is_tourist_route": { "type": "integer", "enum": [0, 1] },
+          "distance": { "type": "string", "nullable": true, "example": "24.5" },
+          "route_time": { "type": "string", "nullable": true, "example": "6:30" },
+          "route_type": { "type": "string", "nullable": true, "enum": ["foot", "bike", "car"] },
+          "route_color": { "type": "string", "nullable": true, "example": "#0a5ed7" },
+          "address": { "type": "string", "nullable": true },
+          "for_disabled": { "type": "integer", "enum": [0, 1] },
+          "btn_text": { "type": "string" },
+          "btn_link": { "type": "string" },
+          "image": { "type": "string", "nullable": true },
+          "category_ids": { "type": "array", "items": { "type": "integer" } },
+          "multimedia_type": { "type": "string", "nullable": true, "enum": ["audio", "video", "youtube"] },
+          "multimedia": { "type": "array", "items": { "type": "object", "properties": { "type": { "type": "string" }, "src": { "type": "string" }, "video_poster": { "type": "string", "nullable": true }, "title": { "type": "string" } } } },
+          "gallery": { "type": "array", "items": { "type": "string" } },
+          "additional_data": { "type": "object" }
+        }
+      },
+      "PointInput": {
+        "type": "object",
+        "required": ["name", "coordinates"],
+        "properties": {
+          "name": { "type": "string", "example": "Ratusz" },
+          "coordinates": { "type": "string", "description": "Punkt: \"lat||lng\". Trasa: \"lat||lng;lat||lng;...\".", "example": "53.1325||23.1688" },
+          "is_tourist_route": { "type": "integer", "enum": [0, 1], "default": 0 },
+          "distance": { "type": "string", "nullable": true },
+          "route_time": { "type": "string", "nullable": true },
+          "route_type": { "type": "string", "enum": ["foot", "bike", "car"], "nullable": true },
+          "route_color": { "type": "string", "nullable": true },
+          "for_disabled": { "type": "integer", "enum": [0, 1], "default": 0 },
+          "address": { "type": "string", "nullable": true },
+          "lead": { "type": "string", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "btn_text": { "type": "string", "nullable": true },
+          "redirect_link": { "type": "string", "nullable": true },
+          "start_date": { "type": "string", "format": "date-time", "nullable": true },
+          "end_date": { "type": "string", "format": "date-time", "nullable": true },
+          "categories": { "type": "array", "items": { "type": "integer" } },
+          "multimedia_type": { "type": "string", "enum": ["audio", "video", "youtube"], "nullable": true },
+          "audio": { "type": "object", "nullable": true },
+          "audio_title": { "type": "string", "nullable": true },
+          "video": { "type": "object", "nullable": true },
+          "video_poster": { "type": "object", "nullable": true },
+          "yt_link": { "type": "string", "nullable": true },
+          "gallery": { "type": "array", "items": { "type": "object" }, "nullable": true },
+          "image": { "type": "string", "nullable": true, "description": "base64 (data-uri lub czysty) albo upload pliku" },
+          "additional_data": { "type": "object", "nullable": true }
+        }
+      },
+      "Paginator": {
+        "type": "object",
+        "properties": {
+          "current_page": { "type": "integer", "example": 1 },
+          "data": { "type": "array", "items": { "type": "object" } },
+          "first_page_url": { "type": "string" },
+          "from": { "type": "integer", "nullable": true },
+          "last_page": { "type": "integer", "example": 1 },
+          "last_page_url": { "type": "string" },
+          "next_page_url": { "type": "string", "nullable": true },
+          "path": { "type": "string" },
+          "per_page": { "type": "integer", "example": 20 },
+          "prev_page_url": { "type": "string", "nullable": true },
+          "to": { "type": "integer", "nullable": true },
+          "total": { "type": "integer", "example": 2 }
+        }
+      },
+      "Error": { "type": "object", "properties": { "error": { "type": "string" } } }
+    },
+    "responses": {
+      "PointSaved": {
+        "description": "Zapisany obiekt (pełny model wraz z relacją categories).",
+        "content": { "application/json": { "schema": { "type": "object", "properties": { "point": { "type": "object" }, "success": { "type": "boolean", "example": true } } } } }
+      },
+      "Unauthorized": {
+        "description": "Brak danych uwierzytelniających",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Client credentials not provided" } } }
+      },
+      "Forbidden": {
+        "description": "Nieprawidłowe dane lub brak uprawnień admina",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Admin access required" } } }
+      },
+      "NotFound": { "description": "Nie znaleziono zasobu" },
+      "VersionIncompatible": {
+        "description": "Niezgodność wersji API (nagłówek X-Api-Version)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string", "example": "API version incompatible" },
+                "reason": { "type": "string", "enum": ["missing_client_version", "invalid_client_version", "major_mismatch", "client_too_old"] },
+                "server_version": { "type": "string", "example": "1.0.0" },
+                "client_version": { "type": "string", "nullable": true },
+                "min_client_version": { "type": "string", "example": "1.0.0" }
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Błąd walidacji",
+        "content": { "application/json": { "schema": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } }, "example": { "name": ["Podaj nazwę"] } } }
+      }
+    }
+  }
+}

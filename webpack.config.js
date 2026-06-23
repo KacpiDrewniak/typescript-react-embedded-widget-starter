@@ -37,6 +37,15 @@ module.exports = {
       directory: path.join(__dirname, 'dist'),
     },
     port: 3000,
+    proxy: [
+      {
+        context: ['/api/v1/tourist-routes'],
+        target: 'https://trasy-server.bprog.pl',
+        changeOrigin: true,
+        secure: true,
+        auth: 'trasy-server:rev12345',
+      },
+    ],
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.json'],

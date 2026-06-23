@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import ApiTestPanel from './ApiTestPanel'
 import { BlackCloseCircle, ButtonCircle, Main, WhiteBox } from './styles'
 
 const Content = () => {
@@ -16,6 +17,7 @@ const Content = () => {
     return (
       <WhiteBox>
         <BlackCloseCircle size="40" onClick={closeWidget} />
+        <ApiTestPanel />
       </WhiteBox>
     )
   }
