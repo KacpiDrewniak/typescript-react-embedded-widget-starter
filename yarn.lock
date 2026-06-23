@@ -14988,7 +14988,7 @@ __metadata:
     styled-components: "npm:^5.3.5"
     ts-loader: "npm:9.4.1"
     ts-node: "npm:10.9.1"
-    typescript: "npm:*"
+    typescript: "npm:~5.7.3"
     webpack: "npm:5.74.0"
     webpack-cli: "npm:4.10.0"
     webpack-dev-server: "npm:4.11.1"
@@ -14996,23 +14996,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"typescript@npm:*":
-  version: 4.8.3
-  resolution: "typescript@npm:4.8.3"
+"typescript@npm:~5.7.3":
+  version: 5.7.3
+  resolution: "typescript@npm:5.7.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/b7cd1fadba69a891edfbcaf1c5b9c8e7cbdbe979729ef7fdbe8bfa2818c8c141024e433d4430e874890400caf4afd6ab7baa7c2e247e39c9c7b5a80754804ac6
+  checksum: 10c0/b7580d716cf1824736cc6e628ab4cd8b51877408ba2be0869d2866da35ef8366dd6ae9eb9d0851470a39be17cbd61df1126f9e211d8799d764ea7431d5435afa
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A*#optional!builtin<compat/typescript>":
-  version: 4.8.3
-  resolution: "typescript@patch:typescript@npm%3A4.8.3#optional!builtin<compat/typescript>::version=4.8.3&hash=3b564f"
+"typescript@patch:typescript@npm%3A~5.7.3#optional!builtin<compat/typescript>":
+  version: 5.7.3
+  resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/45179c7be9630a41e65f8e77de9aebf43f5b892141f49471e18aa9f79b6426f8d9d6e9482bf184ea7c05918bdebd1dd801993ddd31c21b8e6757fa429a36be77
+  checksum: 10c0/6fd7e0ed3bf23a81246878c613423730c40e8bdbfec4c6e4d7bf1b847cbb39076e56ad5f50aa9d7ebd89877999abaee216002d3f2818885e41c907caaa192cc4
   languageName: node
   linkType: hard
 
