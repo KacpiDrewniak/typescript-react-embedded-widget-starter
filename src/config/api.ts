@@ -37,3 +37,14 @@ export function getTouristRoutesApiConfig(): TouristRoutesClientConfig {
 }
 
 export const touristRoutesApiConfig = getTouristRoutesApiConfig()
+
+export const testClientCredentials = {
+  client: {
+    clientId: 'multisite_client',
+    clientSecret: '940cba50151f0b2b7951eafc266284249a9ad59599fbab6a',
+  },
+  admin: {
+    clientId: 'multisite_admin',
+    clientSecret: 'b96c5b0edfd1c83fa7518a1414d7098d83df384bf6a962b7',
+  },
+} as const

@@ -1,9 +1,19 @@
 import React, { useState } from 'react'
 import ApiTestPanel from './ApiTestPanel'
-import { BlackCloseCircle, ButtonCircle, Main, WhiteBox } from './styles'
+import MapInterface from './MapInterface'
+import {
+  BlackCloseCircle,
+  ButtonCircle,
+  DebugToggle,
+  Main,
+  WhiteBox,
+  WidgetContent,
+  WidgetTopBar,
+} from './styles'
 
 const Content = () => {
   const [isOpened, setIsOpened] = useState(false)
+  const [isDebug, setIsDebug] = useState(false)
 
   const openWidget = () => {
     setIsOpened(true)
@@ -16,8 +26,21 @@ const Content = () => {
   if (isOpened) {
     return (
       <WhiteBox>
-        <BlackCloseCircle size="40" onClick={closeWidget} />
-        <ApiTestPanel />
+        <WidgetTopBar>
+          <DebugToggle>
+            <input
+              type="checkbox"
+              checked={isDebug}
+              onChange={(event) => setIsDebug(event.target.checked)}
+            />
+            isDebug
+          </DebugToggle>
+          <BlackCloseCircle size="40" onClick={closeWidget} />
+        </WidgetTopBar>
+
+        <WidgetContent>
+          {isDebug ? <ApiTestPanel /> : <MapInterface />}
+        </WidgetContent>
       </WhiteBox>
     )
   }

@@ -9,16 +9,73 @@ export const Main = styled.div`
   z-index: 9999;
 `
 
+export const WhiteBox = styled.div`
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  background-color: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(60px);
+  box-shadow: 0px 0px 30px 0px rgb(51 51 51 / 20%);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`
+
+export const WidgetTopBar = styled.div`
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 2;
+`
+
+export const DebugToggle = styled.label`
+  align-items: center;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  user-select: none;
+
+  input {
+    accent-color: #111;
+    cursor: pointer;
+    height: 16px;
+    width: 16px;
+  }
+`
+
 export const BlackCloseCircle = styled(CloseCircle)`
   color: black;
-  position: absolute;
-  top: 14px;
-  right: 16px;
   cursor: pointer;
-  z-index: 1;
+  flex-shrink: 0;
+
   &:hover {
     opacity: 0.8;
   }
+`
+
+export const WidgetContent = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+`
+
+export const MapInterfaceRoot = styled.div`
+  flex: 1;
+  min-height: 0;
 `
 
 export const ButtonCircle = styled.button`
@@ -39,28 +96,13 @@ export const ButtonCircle = styled.button`
   }
 `
 
-export const WhiteBox = styled.div`
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  bottom: 16px;
-  left: 16px;
-  background-color: rgba(255, 255, 255, 1);
-  backdrop-filter: blur(60px);
-  box-shadow: 0px 0px 30px 0px rgb(51 51 51 / 20%);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-`
-
 export const PanelBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
   height: 100%;
   padding: 56px 20px 20px;
-  overflow: hidden;
+  overflow: auto;
 `
 
 export const PanelHeader = styled.h2`
@@ -128,6 +170,32 @@ export const ErrorMessage = styled.pre`
   overflow: auto;
   padding: 12px;
   white-space: pre-wrap;
+`
+
+export const PanelSection = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+export const PanelSectionTitle = styled.h3`
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+`
+
+export const PanelHint = styled.p`
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+`
+
+export const TestButtonSecondary = styled(TestButton)`
+  background: #e5e7eb;
 `
 
 export const ResponsePre = styled.pre`

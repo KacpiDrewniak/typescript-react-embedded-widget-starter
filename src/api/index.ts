@@ -11,12 +11,20 @@ export {
 } from './errors'
 export { buildQueryString } from './http'
 export type {
+  AdminCategoriesParams,
   ApiErrorBody,
+  Category,
+  CategoryName,
   CategoryTreeNode,
+  ClientCategoriesParams,
+  ClientCredentials,
+  ClientObjectsParams,
+  ConfigResponse,
   FrontCategoriesParams,
   FrontObjectsParams,
   LatLng,
   MultimediaType,
+  Paginator,
   Point,
   PointMultimedia,
   RouteType,
