@@ -12,13 +12,14 @@ import 'leaflet/dist/leaflet.css'
 import type { CategoryTreeNode, Point } from '../../api'
 import { parseCoordinates } from '../../api'
 import { LeafletMapRoot } from './styles'
+import { DEFAULT_THEME } from '../../theme/defaults'
 import { buildCategoryColorMap, getObjectMarkerColor } from './utils'
 
 const DEFAULT_CENTER: [number, number] = [52, 19]
 const DEFAULT_ZOOM = 6
 
 function createMarkerIcon(color: string | null, accessible: boolean): L.DivIcon {
-  const markerColor = color || '#0a5ed7'
+  const markerColor = color || DEFAULT_THEME.primary
   const className = accessible
     ? 'tr-map-marker tr-map-marker--accessible'
     : 'tr-map-marker'

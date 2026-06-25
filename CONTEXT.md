@@ -47,3 +47,15 @@ _Avoid_: availability (w kodzie API OK)
 **Współrzędne**:
 Tekstowy format pozycji: punkt `"lat||lng"`, trasa `"lat||lng;lat||lng;..."` (separator pary: `||`, separator punktów trasy: `;`).
 _Avoid_: GeoJSON (inny format), coordinates array
+
+**Tryb launcher**:
+Sposób osadzenia bez parametru `anchor` — widget dodaje pływający przycisk otwierający mapę (domyślnie w rogu strony).
+_Avoid_: floating button (w kodzie OK), popup mode
+
+**Tryb inline**:
+Sposób osadzenia z parametrem `anchor` — mapa renderowana bezpośrednio w wskazanym elemencie strony hosta (`id` kontenera).
+_Avoid_: embedded mode (w kodzie OK), iframe
+
+**Motyw**:
+Zestaw siedmiu kolorów semantycznych (`primary`, `accent`, `surface`, `text`, `muted`, `border`, `dot`) przekazywanych przy osadzeniu widgetu. `dot` to domyślny kolor kropek przy kategoriach (gdy kategoria nie ma własnego koloru z API). Domyślnie paleta czarno-biała (grayscale); host może nadpisać wybrane wartości (np. samymi odcieniami niebieskiego).
+_Avoid_: theme CSS (to implementacja), brand colors (zbyt ogólne)

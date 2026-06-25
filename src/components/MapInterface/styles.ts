@@ -1,17 +1,7 @@
 import styled, { css } from 'styled-components'
+import { ThemeRoot as BaseThemeRoot } from '../../theme/ThemeRoot'
 
-export const ThemeRoot = styled.div`
-  --tr-primary: #0a5ed7;
-  --tr-accent: #ffd202;
-  --tr-surface: #ffffff;
-  --tr-text: #111827;
-  --tr-muted: #6b7280;
-  --tr-border: #e5e7eb;
-  --tr-marker: var(--tr-primary);
-  --tr-route-default: var(--tr-primary);
-
-  background: var(--tr-surface);
-  color: var(--tr-text);
+export const ThemeRoot = styled(BaseThemeRoot)`
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -43,13 +33,13 @@ export const SearchInput = styled.input`
   }
 
   &:disabled {
-    background: #f9fafb;
+    background: var(--tr-border);
     cursor: not-allowed;
   }
 `
 
 export const FilterToggle = styled.button<{ $active?: boolean }>`
-  background: ${({ $active }) => ($active ? 'var(--tr-primary)' : '#f3f4f6')};
+  background: ${({ $active }) => ($active ? 'var(--tr-primary)' : 'var(--tr-border)')};
   border: 1px solid ${({ $active }) => ($active ? 'var(--tr-primary)' : 'var(--tr-border)')};
   border-radius: 8px;
   color: ${({ $active }) => ($active ? '#fff' : 'var(--tr-text)')};
@@ -151,7 +141,7 @@ export const CategoryItem = styled.li<{ $depth?: number }>`
 
 export const CategoryButton = styled.button<{ $active?: boolean; $color?: string | null }>`
   align-items: center;
-  background: ${({ $active }) => ($active ? '#eff6ff' : 'transparent')};
+  background: ${({ $active }) => ($active ? 'var(--tr-border)' : 'transparent')};
   border: none;
   border-radius: 8px;
   color: var(--tr-text);
@@ -165,12 +155,12 @@ export const CategoryButton = styled.button<{ $active?: boolean; $color?: string
   width: 100%;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--tr-border);
   }
 `
 
 export const CategoryDot = styled.span<{ $color?: string | null }>`
-  background: ${({ $color }) => $color || 'var(--tr-marker)'};
+  background: ${({ $color }) => $color || 'var(--tr-dot)'};
   border-radius: 50%;
   flex-shrink: 0;
   height: 10px;
@@ -179,7 +169,7 @@ export const CategoryDot = styled.span<{ $color?: string | null }>`
 
 export const CategoryChip = styled.button<{ $active?: boolean; $color?: string | null }>`
   align-items: center;
-  background: ${({ $active }) => ($active ? 'var(--tr-primary)' : '#f3f4f6')};
+  background: ${({ $active }) => ($active ? 'var(--tr-primary)' : 'var(--tr-border)')};
   border: 1px solid
     ${({ $active }) => ($active ? 'var(--tr-primary)' : 'var(--tr-border)')};
   border-radius: 999px;
@@ -286,7 +276,7 @@ export const RouteMetaRow = styled.div`
 `
 
 export const RouteMetaBadge = styled.span`
-  background: #f3f4f6;
+  background: var(--tr-border);
   border-radius: 999px;
   padding: 6px 10px;
 `
@@ -294,7 +284,7 @@ export const RouteMetaBadge = styled.span`
 export const DetailCta = styled.a`
   background: var(--tr-accent);
   border-radius: 8px;
-  color: #111;
+  color: var(--tr-surface);
   display: inline-block;
   font-size: 14px;
   font-weight: 700;
@@ -347,7 +337,7 @@ export const LeafletMapRoot = styled.div`
   width: 100%;
 
   .leaflet-container {
-    background: #e5e7eb;
+    background: var(--tr-border);
     font-family: inherit;
     height: 100%;
     width: 100%;

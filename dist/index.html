@@ -1,0 +1,45 @@
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EmbeddedWidget</title>
+</head>
+<body>
+<p>Tryb inline z motywem. Domyślnie (bez theme) widget jest czarno-biały.</p>
+
+<div id="trasy-map" style="height: 600px; margin: 24px 0;"></div>
+
+<script src="./embedded-widget.js"></script>
+<script>
+    // Motyw niebieski (odcienie blue)
+    var BLUE_THEME = {
+        primary: '#084298',
+        accent: '#1d5fbf',
+        surface: '#f0f5fc',
+        text: '#0a1f3d',
+        muted: '#5a7a9a',
+        border: '#b8cfe8',
+        dot: '#2563eb',
+    };
+
+    // Motyw zielony (odcienie green) — zamień theme: BLUE_THEME na GREEN_THEME
+    var GREEN_THEME = {
+        primary: '#166534',
+        accent: '#15803d',
+        surface: '#f0fdf4',
+        text: '#052e16',
+        muted: '#5f8a6e',
+        border: '#a7d7b8',
+        dot: '#22c55e',
+    };
+
+    EmbeddedWidget.mount({
+        anchor: 'trasy-map',
+        hideDebugMode: false,
+        // theme: BLUE_THEME,
+        theme: GREEN_THEME,
+    });
+</script>
+</body>
+</html>

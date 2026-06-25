@@ -1,27 +1,48 @@
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { CloseCircle } from '@styled-icons/ionicons-sharp/CloseCircle'
 
-export const Main = styled.div`
-  position: fixed;
-  bottom: 0px;
-  right: 50px;
-  bottom: 50px;
-  z-index: 9999;
+export const Main = styled.div<{ $inline?: boolean }>`
+  ${({ $inline }) =>
+    $inline
+      ? css`
+          height: 100%;
+          min-height: 400px;
+          position: relative;
+          width: 100%;
+        `
+      : css`
+          bottom: 50px;
+          position: fixed;
+          right: 50px;
+          z-index: 9999;
+        `}
 `
 
 export const WhiteBox = styled.div`
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  bottom: 16px;
-  left: 16px;
-  background-color: rgba(255, 255, 255, 1);
+  background-color: var(--tr-surface);
   backdrop-filter: blur(60px);
+  border-radius: 12px;
+  bottom: 16px;
   box-shadow: 0px 0px 30px 0px rgb(51 51 51 / 20%);
+  display: flex;
+  flex-direction: column;
+  left: 16px;
+  overflow: hidden;
+  position: fixed;
+  right: 16px;
+  top: 16px;
+`
+
+export const InlineBox = styled.div`
+  background: var(--tr-surface);
+  border: 1px solid var(--tr-border);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 400px;
   overflow: hidden;
+  width: 100%;
 `
 
 export const WidgetTopBar = styled.div`
@@ -39,7 +60,7 @@ export const WidgetTopBar = styled.div`
 
 export const DebugToggle = styled.label`
   align-items: center;
-  color: #374151;
+  color: var(--tr-muted);
   cursor: pointer;
   display: inline-flex;
   font-size: 13px;
@@ -48,7 +69,7 @@ export const DebugToggle = styled.label`
   user-select: none;
 
   input {
-    accent-color: #111;
+    accent-color: var(--tr-primary);
     cursor: pointer;
     height: 16px;
     width: 16px;
@@ -56,7 +77,7 @@ export const DebugToggle = styled.label`
 `
 
 export const BlackCloseCircle = styled(CloseCircle)`
-  color: black;
+  color: var(--tr-text);
   cursor: pointer;
   flex-shrink: 0;
 
@@ -79,18 +100,18 @@ export const MapInterfaceRoot = styled.div`
 `
 
 export const ButtonCircle = styled.button`
-  background: #ffd202;
-  height: 90px;
-  width: 90px;
-  padding: 1rem;
+  background: var(--tr-accent);
   border: none;
+  border-radius: 50%;
+  box-shadow: 0px 0px 10px 1px rgb(51 51 51 / 10%);
+  color: var(--tr-surface);
   cursor: pointer;
-  font-color: black;
   font-size: 14px;
   font-weight: bold;
-  border-radius: 50%;
+  height: 90px;
   padding: 10px;
-  box-shadow: 0px 0px 10px 1px rgb(51 51 51 / 10%);
+  width: 90px;
+
   &:hover {
     opacity: 0.8;
   }
@@ -101,15 +122,15 @@ export const PanelBody = styled.div`
   flex-direction: column;
   gap: 12px;
   height: 100%;
-  padding: 56px 20px 20px;
   overflow: auto;
+  padding: 56px 20px 20px;
 `
 
 export const PanelHeader = styled.h2`
-  margin: 0;
+  color: var(--tr-text);
   font-size: 18px;
   font-weight: 600;
-  color: #111;
+  margin: 0;
 `
 
 export const TestButtonRow = styled.div`
@@ -119,10 +140,10 @@ export const TestButtonRow = styled.div`
 `
 
 export const TestButton = styled.button`
-  background: #ffd202;
+  background: var(--tr-accent);
   border: none;
   border-radius: 8px;
-  color: #111;
+  color: var(--tr-surface);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -139,7 +160,7 @@ export const TestButton = styled.button`
 `
 
 export const UuidInput = styled.input`
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--tr-border);
   border-radius: 8px;
   flex: 1;
   font-size: 13px;
@@ -149,21 +170,22 @@ export const UuidInput = styled.input`
 
 export const StatusBar = styled.div<{ $status: 'idle' | 'loading' | 'success' | 'error' }>`
   background: ${({ $status }) => {
-    if ($status === 'loading') return '#eff6ff'
-    if ($status === 'success') return '#ecfdf5'
-    if ($status === 'error') return '#fef2f2'
-    return '#f9fafb'
+    if ($status === 'loading') return 'var(--tr-border)'
+    if ($status === 'success') return 'var(--tr-border)'
+    if ($status === 'error') return 'var(--tr-border)'
+    return 'var(--tr-surface)'
   }};
+  border: 1px solid var(--tr-border);
   border-radius: 8px;
-  color: #374151;
+  color: var(--tr-text);
   font-size: 13px;
   padding: 10px 12px;
 `
 
 export const ErrorMessage = styled.pre`
-  background: #fef2f2;
+  background: var(--tr-border);
   border-radius: 8px;
-  color: #b91c1c;
+  color: var(--tr-text);
   font-size: 12px;
   margin: 0;
   max-height: 120px;
@@ -179,7 +201,7 @@ export const PanelSection = styled.section`
 `
 
 export const PanelSectionTitle = styled.h3`
-  color: #6b7280;
+  color: var(--tr-muted);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -188,18 +210,19 @@ export const PanelSectionTitle = styled.h3`
 `
 
 export const PanelHint = styled.p`
-  color: #6b7280;
+  color: var(--tr-muted);
   font-size: 12px;
   line-height: 1.4;
   margin: 0;
 `
 
 export const TestButtonSecondary = styled(TestButton)`
-  background: #e5e7eb;
+  background: var(--tr-border);
+  color: var(--tr-text);
 `
 
 export const ResponsePre = styled.pre`
-  background: #f3f4f6;
+  background: var(--tr-border);
   border-radius: 8px;
   flex: 1;
   font-size: 12px;
